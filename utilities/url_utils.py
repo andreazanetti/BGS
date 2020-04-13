@@ -4,10 +4,11 @@ from the bookmarked ones, that match the search pattern
 '''
 
 import json
+from utilities.bigGsearch import search
 
 
-class explorer():
-    '''Objects to explore the Chrome Bookmarks file
+class dfs_chrome_bookmarks():
+    '''Class that explores the Chrome Bookmarks file
     to return a list of tuples, with (link, location in bmk tree)
     Params:
     count: number of links found
@@ -16,13 +17,10 @@ class explorer():
     explorer_go: to generate fill the list of link
     '''
 
-    def __init__(self, count):
+    def __init__(self, count=0):
         self.count = count
         self.link_list = []
-
-    def explorer(self):
-        self.count = 0
-        print("Created Explorer obj\n")
+        self.link_dict = dict()
 
     def explore_bmk_file(self, dd, loc=('na',)):
         '''
@@ -40,6 +38,10 @@ class explorer():
             # print(dd['name'], "\n")
             # print("URL found and loc is:", loc)
             self.link_list.append((dd['url'], loc + (dd['name'],)))  # whenever there url, name is there?
+            if tuple(loc) not in self.link_dict.keys(): # dd['name']
+                self.link_dict[tuple(loc)] = [dd['url']] # loc + (dd['name'],)
+            else:
+                self.link_dict[tuple(loc)].append(dd['url']) # loc + (dd['name'],)
             self.count += 1
         else:
             # print("The received dict is related to a folder and has the following key fields:")
@@ -47,8 +49,8 @@ class explorer():
             for i in dd.keys():
                 if isinstance(dd[i], dict):
                     # let's explore into dict in any case: we will select interesting info as we go deep
-                    print("Exlporing dict corresponding to current level key: ", i)
-                    print("loc is: ", loc)
+                    # print("Exlporing dict corresponding to current level key: ", i)
+                    # print("loc is: ", loc)
                     if 'name' in dd.keys():
                         ml = loc + (dd['name'],)
                     else:
@@ -57,10 +59,10 @@ class explorer():
 
                 elif isinstance(dd[i], list):  # this is the case of the children list of dicts
                     for k in dd[i]:
-                        print(f"exploring dict {dd['name']}: key {i}")
+                        # print(f"exploring dict {dd['name']}: key {i}")
                         if isinstance(k, dict):
-                            print("dd[i] is a list: Exlporing dict corresponding to current level key: ", i)
-                            print("dd[i] is a list: loc is: ", loc)
+                            # print("dd[i] is a list: Exploring dict corresponding to current level key: ", i)
+                            # print("dd[i] is a list: loc is: ", loc)
                             if 'name' in dd.keys():
                                 ml = loc + (dd['name'],)
                             else:
@@ -84,7 +86,7 @@ def get_Chrome_bookmarks_data(bmk_file):
     with open(bmk_file, 'rt') as data_file:
         bookmark_data = json.load(data_file)
 
-    exx = explorer(0)
+    exx = dfs_chrome_bookmarks(0)
     exx.explore_bmk_file(bookmark_data)
 
     return exx
@@ -98,8 +100,25 @@ def myprint(stack, N=1000, offset=3):
     :param offset: exclude offset initial elements of the second component
     :return:       None
     '''
+    #Todo
     i = 0
     while stack and i < N:
         k, v = stack.pop()
         print(i, ' ', k, v[offset:])  # exclude ('na', 'na', 'na',)
         i += 1
+
+def myprint_for_dict(dict_of_list_of_links, N=1000, offset=3):
+    '''
+    Helper to print out a list of tuples with the second element being a list
+    :param dict_of_list_of_links:  dictionary of list of links, pertaining to a bookmark folder
+    :param N:      default max elements to print
+    :param offset: exclude offset initial elements of the second component
+    :return:       None
+    '''
+    # Todo: make this check better
+    assert(isinstance(dict_of_list_of_links, dict))
+
+    for i, t in enumerate(dict_of_list_of_links.items()):
+        (k, list_of_links) = t
+        print(i,' ', k[offset:], list_of_links)
+
