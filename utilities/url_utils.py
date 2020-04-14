@@ -5,24 +5,27 @@ from the bookmarked ones, that match the search pattern
 
 import json
 from utilities.bigGsearch import search
+from urllib.error import HTTPError
+import time
 
 
 class dfs_chrome_bookmarks():
-    '''Class that explores the Chrome Bookmarks file
+    ''' Class that explores the Chrome Bookmarks file
     to return a list of tuples, with (link, location in bmk tree)
     Params:
     count: number of links found
     link_list: list of tuples (link,location in bmk tree)"
     Methods:
-    explorer_go: to generate fill the list of link
-    '''
+    explorer_go: to generate fill the list of link '''
+    #Todo: make this class iterable (Iteration protocol support)
 
-    def __init__(self, count=0):
-        self.count = count
+    def __init__(self, dd, loc=('na',)):
+        self.count = 0
         self.link_list = []
         self.link_dict = dict()
+        self._explore_bmk_file(dd, loc=('na',))
 
-    def explore_bmk_file(self, dd, loc=('na',)):
+    def _explore_bmk_file(self, dd, loc=('na',)):
         '''
         Fills the link_list with visiting in DFS the tree of bookmarks
         keeping track of the folder structure, so as for the user to select
@@ -55,7 +58,7 @@ class dfs_chrome_bookmarks():
                         ml = loc + (dd['name'],)
                     else:
                         ml = loc + ('na',)
-                    self.explore_bmk_file(dd[i], ml)
+                    self._explore_bmk_file(dd[i], ml)
 
                 elif isinstance(dd[i], list):  # this is the case of the children list of dicts
                     for k in dd[i]:
@@ -67,28 +70,24 @@ class dfs_chrome_bookmarks():
                                 ml = loc + (dd['name'],)
                             else:
                                 ml = loc + ('na',)
-                            self.explore_bmk_file(k, ml)
+                            self._explore_bmk_file(k, ml)
                 else:
-                    # Todo: Make sure this is never relevant case
                     pass
-
+                    # Todo: Make sure this is never relevant case
 
 def get_Chrome_bookmarks_data(bmk_file):
     '''
     Open the Chrome bookmarks file of the user and
     return an object that contains all the links in a list of tuples
     :param bmk_file:
-    :return:
+    :return: class dfs_chrome_bookmarks object with the list of tuples (folder, links) filled
     '''
-    # Todo: make it return a dict with keys the location in the bookmark tree and values
-    # Todo: the list of urls for each folder
+    #Todo: make it return a dict with keys the location in the bookmark tree and values
+    #Todo: the list of urls for each folder
 
     with open(bmk_file, 'rt') as data_file:
         bookmark_data = json.load(data_file)
-
-    exx = dfs_chrome_bookmarks(0)
-    exx.explore_bmk_file(bookmark_data)
-
+    exx = dfs_chrome_bookmarks(bookmark_data)
     return exx
 
 
@@ -122,3 +121,42 @@ def myprint_for_dict(dict_of_list_of_links, N=1000, offset=3):
         (k, list_of_links) = t
         print(i,' ', k[offset:], list_of_links)
 
+def _get_full_key(list_of_tuples, given_uncomplete):
+    '''
+    Getting the firt keys in list_of_lists_of_tuples that includes given_uncomplete
+    :param list_of_tuples:
+    :param given_uncomplete:
+    :return: first matching key
+    '''
+    for ll in list_of_tuples:
+            if ll[3:] == given_uncomplete:
+                return ll[:]
+    return None
+
+def do_search(bmk_obj, pattern_sought=None, folder_list=None):
+
+    # test using google to search on for pattern on selected bookmarks
+    # quick test on searching to match a pattern on a subset of bookmarked links:
+    if folder_list is None:
+        folder_list = [('Bookmarks Bar', 'Andrea', 'Science', 'Ricerca'),
+                       ('Bookmarks Bar', 'POL PHD', 'Comp-Neurosc.'),
+                       ('Bookmarks Bar', 'POL PHD', 'MathCognition')]
+    if pattern_sought is None:
+        pattern_sought = 'neuron'
+
+    print(f"\n\n\ndo_search: Test of search of '{pattern_sought}' in selected bookmarks folders:\n{folder_list}")
+
+    for i in folder_list:
+        kk = _get_full_key(bmk_obj.link_dict.keys(), i)
+        print(kk)
+        for j in bmk_obj.link_dict[kk]:
+            try:
+                # Todo: Get from search the link with a sample of the sentence where the patter was found
+                # for better and more informative display of results
+                res = search(f"site:{j} {pattern_sought}", stop=10)
+                print(f"Results for search of '{pattern_sought}'in folder {i}, url {j}:")
+                print(list(res))
+                time.sleep(3)  # avoid being banned by Google
+            except HTTPError as e:
+                print(f"While analysing site {j} got HTTP Error")
+                print(f"HTTP Error: {e}")

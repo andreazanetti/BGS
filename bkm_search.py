@@ -2,7 +2,8 @@ import argparse
 import getpass
 import utilities.url_utils as ul
 import os
-import sys;
+import sys
+import time
 
 
 def report_on_data(bmk_links):
@@ -18,7 +19,7 @@ def report_on_data(bmk_links):
     else:
         print("There are no duplicate links! OK!")
 
-    ask = input("Want to print the obtained links out? Y/N/How many? ")
+    ask = input("\nDo you want to print the obtained links out? Y/N/How many? ")
     if str(ask).strip(' ') == 'Y':
         ul.myprint(bmk_links.link_list, N=n_links)
     elif (int(ask) > 0) and (int(ask) <= n_links):
@@ -31,32 +32,29 @@ def system_and_env_helper():
     Collects info about the system, platform and check/set env variables
     :return: list of proxy related env variables name
     '''
-    # preliminary check on system
-    # print('Python %s on %s' % (sys.version, sys.platform))
 
     # check and set env variables
     # get environment
     env_keys = os.environ.keys()
 
     # collect env variables related to proxy settings
-    print("Initial environment is the following:")
-    for k, v in os.environ.items():
-        print(f'{k}={v}')
+    print("\n\n\nCurrent environment status relevant to proxy configuration is the following:\n")
     proxy_env_keys = [k for k in env_keys if ("PROXY" in k.upper()
                                             and "NO_PROXY" not in k.upper())]
     for k in proxy_env_keys:
         print(f"proxy related env variable {k} = {os.environ[k]}")
-    proxy_choice = input("Do you want to use thi proxy settings (Y) or you want to skip the proxy (S)?")
+    proxy_choice = input("\n\nDo you want to use these proxy settings (Y) or you want to skip the proxy (S)?")
+    #Todo: check input for correctness
+
     if proxy_choice.upper\
                 () == 'S':
         for k in proxy_env_keys:
             del (os.environ[k])
-        print("\n\n\Current status of proxy env vars AFTER del:")
+        print("\nOK. Status of proxy environment variables has changed:\n")
         for k in proxy_env_keys:
             print(f'{k}={os.environ.get(k)}')
 
     return proxy_env_keys
-
 
 def print_env():
     '''
@@ -65,8 +63,8 @@ def print_env():
     '''
     for k, v in os.environ.items():
             print(f'{k}={v}')
-
     return None
+
 
 def main(username, lpattern):
     '''
@@ -74,31 +72,23 @@ def main(username, lpattern):
     :param username: useful to find the Chrome Bookmarks
     :param lpattern: pattern to match in the bookmarked page content
     '''
-
+    # print some info about the system and set env
     proxy_env_keys = system_and_env_helper()
-    # # check that the environment is set after the call:
-    # print("\n\nCurrent status of environment AFTER del but in MAIN:")
-    # for k in proxy_env_keys:
-    #     print(f'{k}={os.environ.get(k)}')
-    #print_env()
 
-    #Todo: check for data in input to be ok
-
-    bookmarks_file = username.join(
-        ['/Users/', '/Library/Application\ Support/Google/Chrome/Default/Bookmarks'])
+    # identify bookmarks file, get it into a managable dict, report on the bookmarks status
+    #Todo: check for data in input to be ok and deal with non-Mac cases
+    bookmarks_file = username.join(['/Users/', '/Library/Application\ Support/Google/Chrome/Default/Bookmarks'])
     bookmarks_file = bookmarks_file.replace("\\", '')
-    print(f"Bookmarks file used is: {bookmarks_file}")
+    print(f"\nLooking into Bookmarks file: {bookmarks_file}")
     bmk_links = ul.get_Chrome_bookmarks_data(bookmarks_file)
     report_on_data(bmk_links)
-
+    
+    # Todo: user should input the pattern and the set of bookmarks folders to look into
+    ul.do_search(bmk_links, pattern_sought=None, folder_list=None)
     # check dictionary has been populated
-    print("Dictionary of folders with list of links only:")
-    ul.myprint_for_dict(bmk_links.link_dict)
+    # print("Dictionary of Bookmark folders with list of links only:")
+    # ul.myprint_for_dict(bmk_links.link_dict)
 
-    from utilities.bigGsearch import search
-    #quick test on searching to match a pattern on a single page
-    mys2_ok = search("site:https://it.wikipedia.org/wiki/Traglia_di_Jelsi pattini", stop=20)
-    print(list(mys2_ok))
 
 
 if __name__ == '__main__':
