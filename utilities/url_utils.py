@@ -10,14 +10,16 @@ import time
 
 
 class dfs_chrome_bookmarks():
-    ''' Class that explores the Chrome Bookmarks file
+    """
+    Class that explores the Chrome Bookmarks file
     to return a list of tuples, with (link, location in bmk tree)
     Params:
     count: number of links found
     link_list: list of tuples (link,location in bmk tree)"
     Methods:
-    explorer_go: to generate fill the list of link '''
-    #Todo: make this class iterable (Iteration protocol support)
+    explorer_go: to generate fill the list of link
+    """
+    # Todo: make this class iterable (Iteration protocol support)
 
     def __init__(self, dd, loc=('na',)):
         self.count = 0
@@ -82,8 +84,8 @@ def get_Chrome_bookmarks_data(bmk_file):
     :param bmk_file:
     :return: class dfs_chrome_bookmarks object with the list of tuples (folder, links) filled
     '''
-    #Todo: make it return a dict with keys the location in the bookmark tree and values
-    #Todo: the list of urls for each folder
+    # Todo: make it return a dict with keys the location in the bookmark tree and values
+    # Todo: the list of urls for each folder
 
     with open(bmk_file, 'rt') as data_file:
         bookmark_data = json.load(data_file)
@@ -99,7 +101,6 @@ def myprint(stack, N=1000, offset=3):
     :param offset: exclude offset initial elements of the second component
     :return:       None
     '''
-    #Todo
     i = 0
     while stack and i < N:
         k, v = stack.pop()
