@@ -8,6 +8,14 @@ from utilities.bigGsearch import search
 from urllib.error import HTTPError
 import time
 
+__all__ = [
+
+    # Main class to represent bookmarks.
+    'dfs_chrome_bookmarks',
+
+    # Search function.
+    'do_search',
+]
 
 class dfs_chrome_bookmarks():
     """
@@ -16,8 +24,9 @@ class dfs_chrome_bookmarks():
     Params:
     count: number of links found
     link_list: list of tuples (link,location in bmk tree)"
+    link_dict: dictionary of path: [list of links at that path]
     Methods:
-    explorer_go: to generate fill the list of link
+    _explore_bmk_file: to fill the list of links and the dictionary
     """
     # Todo: make this class iterable (Iteration protocol support)
 
@@ -26,6 +35,7 @@ class dfs_chrome_bookmarks():
         self.link_list = []
         self.link_dict = dict()
         self._explore_bmk_file(dd, loc=('na',))
+
 
     def _explore_bmk_file(self, dd, loc=('na',)):
         '''
@@ -42,70 +52,46 @@ class dfs_chrome_bookmarks():
             # print(": ".join([dd['type'], dd['url']]))
             # print(dd['name'], "\n")
             # print("URL found and loc is:", loc)
-            self.link_list.append((dd['url'], loc + (dd['name'],)))  # whenever there url, name is there?
-            if tuple(loc) not in self.link_dict.keys(): # dd['name']
-                self.link_dict[tuple(loc)] = [dd['url']] # loc + (dd['name'],)
+
+            # if the dictionary is about a url, add the url the list of urls, along with its position
+            # in the tree of bookmarks
+            self.link_list.append((dd['url'], loc + (dd['name'],)))
+
+            # fill the simplified dictionary
+            if tuple(loc) not in self.link_dict.keys():
+                self.link_dict[tuple(loc)] = [dd['url']]
             else:
-                self.link_dict[tuple(loc)].append(dd['url']) # loc + (dd['name'],)
+                self.link_dict[tuple(loc)].append(dd['url'])
+
+            # increment the count of links
             self.count += 1
         else:
-            # print("The received dict is related to a folder and has the following key fields:")
-            # print([k for k in dd])
+            # The received dict is related to a folder of bookmarks
             for i in dd.keys():
                 if isinstance(dd[i], dict):
                     # let's explore into dict in any case: we will select interesting info as we go deep
-                    # print("Exlporing dict corresponding to current level key: ", i)
-                    # print("loc is: ", loc)
                     if 'name' in dd.keys():
                         ml = loc + (dd['name'],)
                     else:
                         ml = loc + ('na',)
+                    # recursively look into subtree
                     self._explore_bmk_file(dd[i], ml)
 
                 elif isinstance(dd[i], list):  # this is the case of the children list of dicts
                     for k in dd[i]:
-                        # print(f"exploring dict {dd['name']}: key {i}")
                         if isinstance(k, dict):
-                            # print("dd[i] is a list: Exploring dict corresponding to current level key: ", i)
-                            # print("dd[i] is a list: loc is: ", loc)
                             if 'name' in dd.keys():
                                 ml = loc + (dd['name'],)
                             else:
                                 ml = loc + ('na',)
+                            # recursively look into subtree, for each dict in the list of dicts
                             self._explore_bmk_file(k, ml)
                 else:
                     pass
                     # Todo: Make sure this is never relevant case
 
-def get_Chrome_bookmarks_data(bmk_file):
-    '''
-    Open the Chrome bookmarks file of the user and
-    return an object that contains all the links in a list of tuples
-    :param bmk_file:
-    :return: class dfs_chrome_bookmarks object with the list of tuples (folder, links) filled
-    '''
-    # Todo: make it return a dict with keys the location in the bookmark tree and values
-    # Todo: the list of urls for each folder
+        return None
 
-    with open(bmk_file, 'rt') as data_file:
-        bookmark_data = json.load(data_file)
-    exx = dfs_chrome_bookmarks(bookmark_data)
-    return exx
-
-
-def myprint(stack, N=1000, offset=3):
-    '''
-    Helper to print out a list of tuples with the second element being a list
-    :param stack:  list of tuples
-    :param N:      default max elements to print
-    :param offset: exclude offset initial elements of the second component
-    :return:       None
-    '''
-    i = 0
-    while stack and i < N:
-        k, v = stack.pop()
-        print(i, ' ', k, v[offset:])  # exclude ('na', 'na', 'na',)
-        i += 1
 
 def myprint_for_dict(dict_of_list_of_links, N=1000, offset=3):
     '''
@@ -122,6 +108,7 @@ def myprint_for_dict(dict_of_list_of_links, N=1000, offset=3):
         (k, list_of_links) = t
         print(i,' ', k[offset:], list_of_links)
 
+
 def _get_full_key(list_of_tuples, given_uncomplete):
     '''
     Getting the firt keys in list_of_lists_of_tuples that includes given_uncomplete
@@ -134,8 +121,16 @@ def _get_full_key(list_of_tuples, given_uncomplete):
                 return ll[:]
     return None
 
-def do_search(bmk_obj, pattern_sought=None, folder_list=None):
 
+def do_search(bmk_obj, pattern_sought=None, folder_list=None):
+    '''
+    Does the actual search for the pattern_sought in the urls contained in the
+    bookmarks folder listed in the folder_list, using google.
+    :param bmk_obj: dfs_chrome_bookmarks object representing the Chrome Bookmarks
+    :param pattern_sought: pattern to match
+    :param folder_list: list of Chrome Bookmarks folders for the specific search
+    :return: None
+    '''
     # test using google to search on for pattern on selected bookmarks
     # quick test on searching to match a pattern on a subset of bookmarked links:
     if folder_list is None:
@@ -161,3 +156,5 @@ def do_search(bmk_obj, pattern_sought=None, folder_list=None):
             except HTTPError as e:
                 print(f"While analysing site {j} got HTTP Error")
                 print(f"HTTP Error: {e}")
+
+    return None
