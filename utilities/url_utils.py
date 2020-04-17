@@ -1,6 +1,6 @@
 '''
-Module contains functions to get and organize the list of urls
-from the bookmarked ones, that match the search pattern
+Module contains functions/classes to get and organize the list of urls
+from the bookmarked ones, and launch the search using all or part of the bookmarks
 '''
 
 import json
@@ -92,7 +92,7 @@ class dfs_chrome_bookmarks():
 
         return None
 
-
+# Todo: not used - check if this will be needed
 def myprint_for_dict(dict_of_list_of_links, N=1000, offset=3):
     '''
     Helper to print out a list of tuples with the second element being a list
@@ -131,30 +131,24 @@ def do_search(bmk_obj, pattern_sought=None, folder_list=None):
     :param folder_list: list of Chrome Bookmarks folders for the specific search
     :return: None
     '''
-    # test using google to search on for pattern on selected bookmarks
-    # quick test on searching to match a pattern on a subset of bookmarked links:
-    if folder_list is None:
-        folder_list = [('Bookmarks Bar', 'Andrea', 'Science', 'Ricerca'),
-                       ('Bookmarks Bar', 'POL PHD', 'Comp-Neurosc.'),
-                       ('Bookmarks Bar', 'POL PHD', 'MathCognition')]
-    if pattern_sought is None:
-        pattern_sought = 'neuron'
-
+    # Using google to search on for pattern on selected bookmarks
     print(f"\n\n\ndo_search: Test of search of '{pattern_sought}' in selected bookmarks folders:\n{folder_list}")
 
+    all_responses = []
     for i in folder_list:
         kk = _get_full_key(bmk_obj.link_dict.keys(), i)
         print(kk)
-        for j in bmk_obj.link_dict[kk]:
-            try:
-                # Todo: Get from search the link with a sample of the sentence where the patter was found
-                # for better and more informative display of results
-                res = search(f"site:{j} {pattern_sought}", stop=10)
-                print(f"Results for search of '{pattern_sought}'in folder {i}, url {j}:")
-                print(list(res))
-                time.sleep(3)  # avoid being banned by Google
-            except HTTPError as e:
-                print(f"While analysing site {j} got HTTP Error")
+
+        # instead of looping over the list of links, pack a single request
+        # with multiple domains (or pages) to look into it
+        try:
+            res = search(f"{pattern_sought}", domains=bmk_obj.link_dict[kk], stop=10)
+            print(f"do_search receives this response: {list(res)}")
+            all_responses.append(list(res))
+            time.sleep(5)  # avoid being banned by Google
+            # Todo: Get from search the link with a sample of the sentence where the patter was found
+        except HTTPError as e:
+                print(f"While analysing sites {bmk_obj.link_dict[kk]}\n got HTTP Error")
                 print(f"HTTP Error: {e}")
 
-    return None
+    return all_responses

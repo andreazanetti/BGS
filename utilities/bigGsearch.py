@@ -175,14 +175,17 @@ def get_page(url, user_agent=None):
     request = Request(url)
     request.add_header('User-Agent', user_agent)
     cookie_jar.add_cookie_header(request)
+
     response = urlopen(request)
     cookie_jar.extract_cookies(response, request)
     html = response.read()
     response.close()
+
     try:
         cookie_jar.save()
     except Exception:
         pass
+
     return html
 
 
@@ -292,6 +295,7 @@ def search(query, tld='com', lang='en', tbs='0', safe='off', num=10, start=0,
         else:
             url = url_search_num % vars()
 
+    html_responses = []
     # Loop until we reach the maximum result, if any (otherwise, loop forever).
     while not stop or count < stop:
 
@@ -312,12 +316,14 @@ def search(query, tld='com', lang='en', tbs='0', safe='off', num=10, start=0,
 
         # Request the Google Search results page.
         html = get_page(url, user_agent)
+        html_responses.append(html)
 
         # Parse the response and get every anchored URL.
         if is_bs4:
             soup = BeautifulSoup(html, 'html.parser')
         else:
             soup = BeautifulSoup(html)
+
         try:
             anchors = soup.find(id='search').findAll('a')
             # Sometimes (depending on the User-agent) there is
@@ -328,6 +334,13 @@ def search(query, tld='com', lang='en', tbs='0', safe='off', num=10, start=0,
             if gbar:
                 gbar.clear()
             anchors = soup.findAll('a')
+
+        try:
+            details = soup.findAll("div", {"class": "s"})
+            print("bigGsearch print other details ", details)
+        except:
+            raise "soup.findAll with st non funziona"
+
 
         # Process every anchored URL.
         for a in anchors:
@@ -370,6 +383,7 @@ def search(query, tld='com', lang='en', tbs='0', safe='off', num=10, start=0,
         else:
             url = url_next_page_num % vars()
 
+    return html_responses
 
 
 # Shortcut to search images.

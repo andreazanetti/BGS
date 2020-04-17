@@ -2,6 +2,7 @@ import argparse
 import getpass
 import utilities.url_utils as ul
 import os
+import json
 
 
 def report_on_data(bmk_links):
@@ -22,9 +23,9 @@ def report_on_data(bmk_links):
         print("There are no duplicate links! OK!")
     ask = input("\nDo you want to print the obtained links out? Y/N/How many? ")
     if str(ask).strip(' ') == 'Y':
-        ul.myprint(bmk_links.link_list, N=n_links)
+        myprint(bmk_links.link_list, N=n_links)
     elif (int(ask) > 0) and (int(ask) <= n_links):
-        ul.myprint(bmk_links.link_list, N=int(ask))
+        myprint(bmk_links.link_list, N=int(ask))
         # Todo: do this well taking care of the N case....
 
     return None
@@ -98,7 +99,7 @@ def get_Chrome_bookmarks_data(bmk_file):
 
     with open(bmk_file, 'rt') as data_file:
         bookmark_data = json.load(data_file)
-    exx = dfs_chrome_bookmarks(bookmark_data)
+    exx = ul.dfs_chrome_bookmarks(bookmark_data)
     return exx
 
 
@@ -119,16 +120,24 @@ def main(username, lpattern):
     print(f"\nLooking into Bookmarks file: {bookmarks_file}")
 
     # Get bookmarks into a manageable dict
-    bmk_links = ul.get_Chrome_bookmarks_data(bookmarks_file)
+    bmk_links = get_Chrome_bookmarks_data(bookmarks_file)
 
     # and report on the bookmarks status
     report_on_data(bmk_links)
 
     # search for chosen pattern into a specified subset of bookmarked links
-    # Todo: user should input the pattern here and not only on cli comand,
+    # Todo: user should input the pattern here and not only on cli command,
     # Todo: and also the set of bookmarks folders to look into
-    ul.do_search(bmk_links, pattern_sought=lpattern, folder_list=None)
 
+    # quick test on searching to match a pattern on a subset of bookmarked links:
+    folder_list = [('Bookmarks Bar', 'Andrea', 'Science', 'Ricerca'),
+                       ('Bookmarks Bar', 'POL PHD', 'MathCognition')]
+
+    all_responses = ul.do_search(bmk_links, pattern_sought=lpattern, folder_list=folder_list)
+
+    print(f"************\nmain receives all these reponses: {list(all_responses)}")
+    # check this: https://ahrefs.com/blog/google-advanced-search-operators/
+    # and also https://github.com/daku/SearchMark
 
 
 if __name__ == '__main__':
